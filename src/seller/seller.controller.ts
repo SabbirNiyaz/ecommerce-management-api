@@ -8,12 +8,12 @@ import { UpdateStockDto } from "./dto/update-stock.dto";
 export class SellerController {
     constructor(private readonly sellerService: SellerService) { }
 
-    //Get all products
+    // Get all products
     @Get('products')
     getAllProducts(): object {
         return this.sellerService.getAllProducts();
     }
-    //Get products by id
+    // Get products by id
     @Get('products/:id')
     getProductById(@Param('id', ParseIntPipe) id: number): object {
         return this.sellerService.getProductById(id);
@@ -38,12 +38,12 @@ export class SellerController {
     deleteProduct(@Param('id', ParseIntPipe) id: number) {
         return this.sellerService.deleteProduct(id);
     }
-    //Get all oder
+    // Get all oder
     @Get('oder')
     viewOder(): object {
         return this.sellerService.viewOder();
     }
-    //Search oder
+    // Search oder
     @Get('oder/search')
     searchOder(@Query('order_id', ParseIntPipe) oderId: number,
         @Query('status') status: string

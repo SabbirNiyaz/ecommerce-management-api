@@ -6,7 +6,7 @@ import { UpdateStockDto } from "./dto/update-stock.dto"
 import { oderDemo } from "./db/oderDb"
 @Injectable()
 export class SellerService {
-    //Get all products
+    // Get all products
     getAllProducts(): object {
         return {
             success: true,
