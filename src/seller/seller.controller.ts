@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Patch, Query, UsePipes, ValidationPipe, UseInterceptors, UploadedFile, ParseFilePipe, FileTypeValidator, Res } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Patch, Query, UseInterceptors, UploadedFile, Res } from "@nestjs/common";
 import type { Response } from "express";
 import { SellerService } from "./seller.service";
 import { CreateProductDto } from "./dto/create-product.dto";
@@ -103,10 +103,13 @@ export class SellerController {
         const filePath = join(process.cwd(), 'src', 'uploads', name);
         // Check if file exists
         if (!existsSync(filePath)) {
-            return res.status(404).json({ message: 'File not found' });
+            return res.status(404).json({
+                success: false,
+                message: 'File not found'
+            });
         }
-
         // Send the file
         return res.sendFile(filePath);
     }
 }
+
