@@ -5,7 +5,6 @@ import { UpdateProductDto } from "./dto/update-product.dto"
 import { UpdateStockDto } from "./dto/update-stock.dto"
 import { oderDemo } from "./db/oderDb"
 import { VerifySellerDto } from "./dto/verify-seller.dto"
-import { sellerInfoDb } from "./db/sellerInfoDb"
 
 @Injectable()
 export class SellerService {
@@ -115,11 +114,8 @@ export class SellerService {
             ...dto,
             document: file.filename,
         };
-
-        sellerInfoDb.push(seller);
-
         return {
-            message: 'Seller created successfully',
+            message: 'Seller verified successfully',
             seller,
         };
     }
