@@ -4,16 +4,20 @@ import { CreateProductDto } from "./dto/create-product.dto"
 import { UpdateProductDto } from "./dto/update-product.dto"
 import { UpdateStockDto } from "./dto/update-stock.dto"
 import { oderDemo } from "./db/oderDb"
+import { VerifySellerDto } from "./dto/verify-seller.dto"
+import { sellerInfoDb } from "./db/sellerInfoDb"
+
 @Injectable()
 export class SellerService {
-    // Get all products
+    //! Get all products
     getAllProducts(): object {
         return {
             success: true,
             products: demoProducts
         }
     }
-    // Get products by id
+
+    //! Get products by id
     getProductById(id: number): object {
         return {
             success: true,
@@ -21,20 +25,22 @@ export class SellerService {
                 'No Product Found'
         }
     }
-    // Create product
-    createProduct(pObj: CreateProductDto): object {
+
+    //! Create product
+    createProduct(pDto: CreateProductDto): object {
         return {
             success: true,
-            data: pObj
+            data: pDto
         }
     }
-    // Update product
-    updateProduct(id: number, pObj: UpdateProductDto): object {
+
+    //! Update product
+    updateProduct(id: number, pDto: UpdateProductDto): object {
         if (demoProducts[`${id - 1}`]) {
             return {
                 success: true,
                 id: id,
-                data: pObj
+                data: pDto
             }
         }
         return {
@@ -42,15 +48,16 @@ export class SellerService {
             message: "Id is not exits"
         }
     }
-    // Update product stock
-    updateProductStock(id: number, pObj: UpdateStockDto): object {
+
+    //! Update product stock
+    updateProductStock(id: number, pDto: UpdateStockDto): object {
         if (demoProducts[`${id - 1}`]) {
             return {
                 success: true,
                 id: id,
                 name: demoProducts[`${id - 1}`].name,
                 category: demoProducts[`${id - 1}`].category,
-                Updated: pObj
+                Updated: pDto
             }
         }
         return {
@@ -58,7 +65,8 @@ export class SellerService {
             message: "Id is not exits"
         }
     }
-    // Delete product
+
+    //! Delete product
     deleteProduct(id: number) {
         if (demoProducts[`${id - 1}`]) {
             return {
@@ -77,7 +85,8 @@ export class SellerService {
             data: oderDemo
         }
     }
-    // Search oder
+
+    //! Search oder
     searchOder(oderId?: number, status?: string) {
         if (status) {
             const result = oderDemo.filter(order => order.status.toLowerCase() === status.toLowerCase());
@@ -97,5 +106,21 @@ export class SellerService {
             success: false,
             message: "Query is not exits"
         }
+    }
+
+    //! Sellers Info verification
+    sellerInfoVerify(dto: VerifySellerDto, file: Express.Multer.File) {
+        const seller = {
+            id: Date.now().toString(),
+            ...dto,
+            document: file.filename,
+        };
+
+        sellerInfoDb.push(seller);
+
+        return {
+            message: 'Seller created successfully',
+            seller,
+        };
     }
 }
