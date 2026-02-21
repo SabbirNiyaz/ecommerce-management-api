@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Patch, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Patch, Query, UsePipes, ValidationPipe } from "@nestjs/common";
 import { SellerService } from "./seller.service";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
@@ -20,6 +20,7 @@ export class SellerController {
     }
     // Create product
     @Post('products')
+    // @UsePipes(new ValidationPipe()) // Apply the validation
     createProduct(@Body() pObj: CreateProductDto) {
         return this.sellerService.createProduct(pObj);
     }
