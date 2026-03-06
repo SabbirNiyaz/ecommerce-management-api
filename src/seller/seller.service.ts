@@ -1,110 +1,186 @@
-import { Injectable } from "@nestjs/common"
+import { HttpException, HttpStatus, Injectable } from "@nestjs/common"
 import { demoProducts } from "./db/productDb"
 import { CreateProductDto } from "./dto/create-product.dto"
 import { UpdateProductDto } from "./dto/update-product.dto"
 import { UpdateStockDto } from "./dto/update-stock.dto"
 import { oderDemo } from "./db/oderDb"
 import { VerifySellerDto } from "./dto/verify-seller.dto"
+import { ProductEntity } from "./entities/product.entity"
+import { InjectRepository } from "@nestjs/typeorm"
+import { MoreThan, Repository } from "typeorm"
 
 @Injectable()
 export class SellerService {
+    constructor(
+        @InjectRepository(ProductEntity) private productRepo: Repository<ProductEntity>,
+    ) { }
     //! Get all products
-    getAllProducts(): object {
-        return {
-            success: true,
-            products: demoProducts
+    async getAllProducts(): Promise<ProductEntity[]> {
+        const allProduct = await this.productRepo.find({
+            select: {
+                id: true,
+                name: true,
+                description: true,
+                price: true,
+                stock: true,
+                status: true,
+            },
+            order: {
+                id: 'ASC'
+            },
+        })
+        if (allProduct.length === 0) {
+            throw new HttpException('No product found', HttpStatus.NOT_FOUND);
         }
+        return allProduct;
     }
 
     //! Get products by id
-    getProductById(id: number): object {
-        return {
-            success: true,
-            product: demoProducts[`${id - 1}`] ? demoProducts[`${id - 1}`] :
-                'No Product Found'
+    async getProductById(id: number): Promise<ProductEntity> {
+        const singleProduct = await this.productRepo.findOne({
+            where: { id },
+            select: {
+                id: true,
+                name: true,
+                description: true,
+                price: true,
+                stock: true,
+                status: true,
+            },
+        })
+        if (singleProduct === null) {
+            throw new HttpException(`Product id:${id} is not found`, HttpStatus.NOT_FOUND);
         }
+        return singleProduct;
     }
 
     //! Create product
-    createProduct(pDto: CreateProductDto): object {
-        return {
-            success: true,
-            data: pDto
+    async createProduct(pDto: CreateProductDto): Promise<ProductEntity> {
+        try {
+            // Create entity instance
+            const newProduct = await this.productRepo.create(pDto);
+
+            // Automatically set status based on stock 
+            if (newProduct.stock < 1) {
+                newProduct.status = "out_of_stock";
+            } else {
+                newProduct.status = "available";
+            }
+
+            // Save to database
+            return await this.productRepo.save(newProduct);
+
+        } catch (error) {
+            console.error('Error creating product:', error.message);
+            throw new HttpException(`Error: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     //! Update product
-    updateProduct(id: number, pDto: UpdateProductDto): object {
-        if (demoProducts[`${id - 1}`]) {
-            return {
-                success: true,
-                id: id,
-                data: pDto
-            }
+    async updateProduct(id: number, pDto: UpdateProductDto): Promise<ProductEntity> {
+        const findProduct = await this.productRepo.findOneBy({ id })
+        if (findProduct === null) {
+            throw new HttpException(`Product id:${id} is not found`, HttpStatus.NOT_FOUND);
         }
-        return {
-            success: false,
-            message: "Id is not exits"
+        try {
+            // Automatically set status based on stock 
+            if (findProduct.stock < 1) {
+                findProduct.status = "out_of_stock";
+            } else {
+                findProduct.status = "available";
+            }
+            // Merge DTO into found product
+            Object.assign(findProduct, pDto);
+
+            // Save the updated entity
+            const updateProduct = await this.productRepo.save(findProduct);
+            return updateProduct;
+
+        } catch (error) {
+            console.error('Error updating product:', error.message);
+            throw new HttpException(`Error: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    //! Update product stock
-    updateProductStock(id: number, pDto: UpdateStockDto): object {
-        if (demoProducts[`${id - 1}`]) {
-            return {
-                success: true,
-                id: id,
-                name: demoProducts[`${id - 1}`].name,
-                category: demoProducts[`${id - 1}`].category,
-                Updated: pDto
-            }
+    //! Update product stock and status
+    async updateProductStockAndStatus(id: number, pDto: UpdateStockDto): Promise<ProductEntity> {
+        const findProduct = await this.productRepo.findOneBy({ id })
+        if (findProduct === null) {
+            throw new HttpException(`Product id:${id} is not found`, HttpStatus.NOT_FOUND);
         }
-        return {
-            success: false,
-            message: "Id is not exits"
+        try {
+            // Automatically set stock based on status 
+            if (pDto.status === "out_of_stock") {
+                pDto.stock = 0;
+            }
+            if (pDto.stock === 0) {
+                pDto.status = "out_of_stock"
+            }
+            // Merge DTO into found product
+            Object.assign(findProduct, pDto);
+
+            // Save the updated entity
+            const updateProduct = await this.productRepo.save(findProduct);
+            return updateProduct;
+
+        } catch (error) {
+            console.error('Error updating product:', error.message);
+            throw new HttpException(`Error: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     //! Delete product
-    deleteProduct(id: number) {
-        if (demoProducts[`${id - 1}`]) {
+    async deleteProduct(id: number): Promise<any> {
+        const findProduct = await this.productRepo.findOneBy({ id })
+        if (findProduct === null) {
+            throw new HttpException(`Product id:${id} is not found`, HttpStatus.NOT_FOUND);
+        }
+        try {
+            await this.productRepo.delete({ id })
             return {
                 success: true,
-                message: "Deleted"
-            }
-        }
-        return {
-            success: false,
-            message: "Id is not exits"
-        }
-    }
-    viewOder(): object {
-        return {
-            success: true,
-            data: oderDemo
-        }
-    }
-
-    //! Search oder
-    searchOder(oderId?: number, status?: string) {
-        if (status) {
-            const result = oderDemo.filter(order => order.status.toLowerCase() === status.toLowerCase());
-            if (result.length > 0) {
-                return { success: true, orders: result };
-            }
-        }
-
-        // filter by orderId 
-        if (oderDemo[oderId! - 1]) {
-            return {
-                success: true,
-                data: oderDemo[oderId! - 1]
+                message: `User with ID ${id} has been deleted`,
             };
+
+        } catch (error) {
+            console.error('Error deleting product:', error.message);
+            throw new HttpException(`Error: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+
         }
-        return {
-            success: false,
-            message: "Query is not exits"
+    }
+
+    //! Filter product
+    async filterProduct(minPrice?: number, qStatus?: string): Promise<ProductEntity[]> {
+        // Build where conditions dynamically
+        const where: any[] = [];
+
+        if (qStatus) {
+            where.push({ status: qStatus });
         }
+        if (minPrice !== undefined) {
+            where.push({ price: MoreThan(minPrice) });
+        }
+
+        // If no filters, just get all
+        const filterProduct = await this.productRepo.find({
+            where: where.length > 0 ? where : undefined,
+            select: {
+                id: true,
+                name: true,
+                description: true,
+                price: true,
+                stock: true,
+                status: true,
+            },
+            order: {
+                price: 'ASC',
+            },
+        });
+
+        if (!filterProduct || filterProduct.length === 0) {
+            throw new HttpException('No product found', HttpStatus.NOT_FOUND);
+        }
+        return filterProduct;
     }
 
     //! Sellers Info verification
