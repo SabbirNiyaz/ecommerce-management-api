@@ -17,52 +17,49 @@ export class SellerController {
 
     //! Get all products
     @Get('products')
-    getAllProducts(): Promise<ProductEntity[]> {
+    async getAllProducts(): Promise<ProductEntity[]> {
         return this.sellerService.getAllProducts();
     }
 
     //! Get products by id
     @Get('products/:id')
-    getProductById(@Param('id', ParseIntPipe) id: number): object {
+    async getProductById(@Param('id', ParseIntPipe) id: number): Promise<ProductEntity> {
         return this.sellerService.getProductById(id);
     }
 
     //! Create product
     @Post('products')
-    createProduct(@Body() pDto: CreateProductDto): Promise<ProductEntity> {
+    async createProduct(@Body() pDto: CreateProductDto): Promise<ProductEntity> {
         return this.sellerService.createProduct(pDto);
     }
 
     //! Update product
     @Put('products/:id')
-    updateProduct(@Param('id', ParseIntPipe) id: number, @Body() pDto: UpdateProductDto) {
+    async updateProduct(@Param('id', ParseIntPipe) id: number,
+        @Body() pDto: UpdateProductDto): Promise<ProductEntity> {
         return this.sellerService.updateProduct(id, pDto);
     }
 
-    //! Update product stock
+    //! Update product stock and status
     @Patch('products/:id')
-    updateProductStock(@Param('id', ParseIntPipe) id: number, @Body() pDto: UpdateStockDto) {
-        return this.sellerService.updateProductStock(id, pDto);
+    async updateProductStockAndStatus(@Param('id', ParseIntPipe) id: number,
+        @Body() pDto: UpdateStockDto): Promise<ProductEntity> {
+        return this.sellerService.updateProductStockAndStatus(id, pDto);
     }
 
     //! Delete product
     @Delete('products/:id')
-    deleteProduct(@Param('id', ParseIntPipe) id: number) {
+    async deleteProduct(@Param('id', ParseIntPipe) id: number): Promise<string> {
         return this.sellerService.deleteProduct(id);
     }
 
-    //! Get all oder
-    @Get('oder')
-    viewOder(): object {
-        return this.sellerService.viewOder();
-    }
-
-    //! Search oder
-    @Get('oder/search')
-    searchOder(@Query('order_id', ParseIntPipe) oderId: number,
-        @Query('status') status: string
-    ): object {
-        return this.sellerService.searchOder(oderId, status);
+    //! Filter product
+    @Get('product')
+    async filterProduct(
+        @Query('minPrice') minPrice?: number,
+        @Query('status') qStatus?: string
+    ): Promise<ProductEntity[]> {
+        return this.sellerService.filterProduct(minPrice, qStatus);
     }
 
     //! Sellers Info verification

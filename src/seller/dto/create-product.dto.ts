@@ -30,6 +30,6 @@ export class CreateProductDto {
     @IsIn(['available', 'out_of_stock'], {
         message: 'Status must be either available or out_of_stock',
     })
-    status: string;
+    status?: string;
 
 }
