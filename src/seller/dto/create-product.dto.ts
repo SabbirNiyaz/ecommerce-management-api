@@ -1,15 +1,18 @@
 import { Type } from 'class-transformer';
-import { IsString, IsNumber, IsNotEmpty, Min } from 'class-validator';
+import { IsString, IsNumber, IsNotEmpty, Min, IsOptional, IsIn } from 'class-validator';
 
 export class CreateProductDto {
+    @IsString({ message: 'Category must be a string' })
+    @IsNotEmpty({ message: 'Category is required' })
+    category: string;
 
     @IsString({ message: 'Product name must be a string' })
     @IsNotEmpty({ message: 'Product name is required' })
     name: string;
 
-    @IsString({ message: 'Category must be a string' })
-    @IsNotEmpty({ message: 'Category is required' })
-    category: string;
+    @IsString({ message: 'Description must be a string' })
+    @IsNotEmpty({ message: 'Description is required' })
+    description: string;
 
     @Type(() => Number)
     @IsNumber({}, { message: 'Price must be a number' })
@@ -23,7 +26,10 @@ export class CreateProductDto {
     @Min(0, { message: 'Stock cannot be negative' })
     stock: number;
 
-    @IsString({ message: 'Description must be a string' })
-    @IsNotEmpty({ message: 'Description is required' })
-    description: string;
+    @IsOptional()
+    @IsIn(['available', 'out_of_stock'], {
+        message: 'Status must be either available or out_of_stock',
+    })
+    status: string;
+
 }

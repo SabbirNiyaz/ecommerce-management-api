@@ -1,7 +1,12 @@
-import { IsString, IsNumber, IsNotEmpty, Min, IsOptional } from 'class-validator';
+import { IsString, IsNumber, IsNotEmpty, Min, IsOptional, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class UpdateProductDto {
+
+  @IsOptional()
+  @IsString({ message: 'Category must be a string' })
+  @IsNotEmpty({ message: 'Category cannot be empty' })
+  category?: string;
 
   @IsOptional()
   @IsString({ message: 'Name must be a string' })
@@ -9,9 +14,9 @@ export class UpdateProductDto {
   name?: string;
 
   @IsOptional()
-  @IsString({ message: 'Category must be a string' })
-  @IsNotEmpty({ message: 'Category cannot be empty' })
-  category?: string;
+  @IsString({ message: 'Description must be a string' })
+  @IsNotEmpty({ message: 'Description cannot be empty' })
+  description?: string;
 
   @IsOptional()
   @Type(() => Number)
@@ -26,7 +31,9 @@ export class UpdateProductDto {
   stock?: number;
 
   @IsOptional()
-  @IsString({ message: 'Description must be a string' })
-  @IsNotEmpty({ message: 'Description cannot be empty' })
-  description?: string;
+  @IsIn(['available', 'out_of_stock'], {
+    message: 'Status must be either available or out_of_stock',
+  })
+  status?: string;
+
 }
