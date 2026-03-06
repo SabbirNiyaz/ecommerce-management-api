@@ -9,6 +9,7 @@ import { VerifySellerDto } from "./dto/verify-seller.dto";
 import { diskStorage, MulterError } from "multer";
 import { join } from "path/win32";
 import { existsSync } from "fs";
+import { ProductEntity } from "./entities/product.entity";
 
 @Controller('seller')
 export class SellerController {
@@ -16,7 +17,7 @@ export class SellerController {
 
     //! Get all products
     @Get('products')
-    getAllProducts(): object {
+    getAllProducts(): Promise<ProductEntity[]> {
         return this.sellerService.getAllProducts();
     }
 
@@ -28,8 +29,7 @@ export class SellerController {
 
     //! Create product
     @Post('products')
-    // @UsePipes(new ValidationPipe()) // Apply the validation
-    createProduct(@Body() pDto: CreateProductDto) {
+    createProduct(@Body() pDto: CreateProductDto): Promise<ProductEntity> {
         return this.sellerService.createProduct(pDto);
     }
 
