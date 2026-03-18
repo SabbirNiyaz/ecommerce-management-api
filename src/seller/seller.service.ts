@@ -1,9 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from "@nestjs/common"
-import { demoProducts } from "./db/productDb"
 import { CreateProductDto } from "./dto/create-product.dto"
 import { UpdateProductDto } from "./dto/update-product.dto"
 import { UpdateStockDto } from "./dto/update-stock.dto"
-import { oderDemo } from "./db/oderDb"
 import { VerifySellerDto } from "./dto/verify-seller.dto"
 import { ProductEntity } from "./entities/product.entity"
 import { InjectRepository } from "@nestjs/typeorm"
@@ -12,9 +10,10 @@ import { MoreThan, Repository } from "typeorm"
 @Injectable()
 export class SellerService {
     constructor(
-        @InjectRepository(ProductEntity) private productRepo: Repository<ProductEntity>,
+        @InjectRepository(ProductEntity)
+        private productRepo: Repository<ProductEntity>,
     ) { }
-    //! Get all products
+    //! Get all products 
     async getAllProducts(): Promise<ProductEntity[]> {
         const allProduct = await this.productRepo.find({
             select: {
