@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Patch, Query, UseInterceptors, UploadedFile, Res } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Patch, Query, UseInterceptors, UploadedFile, Res, UseGuards } from "@nestjs/common";
 import type { Response } from "express";
 import { SellerService } from "./seller.service";
 import { CreateProductDto } from "./dto/create-product.dto";
@@ -10,6 +10,7 @@ import { diskStorage, MulterError } from "multer";
 import { join } from "path/win32";
 import { existsSync } from "fs";
 import { ProductEntity } from "./entities/product.entity";
+import { JwtGuard } from "src/auth/jwt.guard";
 
 @Controller('seller')
 export class SellerController {
@@ -29,12 +30,14 @@ export class SellerController {
 
     //! Create product
     @Post('products')
+    @UseGuards(JwtGuard)
     async createProduct(@Body() pDto: CreateProductDto): Promise<ProductEntity> {
         return this.sellerService.createProduct(pDto);
     }
 
     //! Update product
     @Put('products/:id')
+    @UseGuards(JwtGuard)
     async updateProduct(@Param('id', ParseIntPipe) id: number,
         @Body() pDto: UpdateProductDto): Promise<ProductEntity> {
         return this.sellerService.updateProduct(id, pDto);
@@ -42,6 +45,7 @@ export class SellerController {
 
     //! Update product stock and status
     @Patch('products/:id')
+    @UseGuards(JwtGuard)
     async updateProductStockAndStatus(@Param('id', ParseIntPipe) id: number,
         @Body() pDto: UpdateStockDto): Promise<ProductEntity> {
         return this.sellerService.updateProductStockAndStatus(id, pDto);
@@ -49,6 +53,7 @@ export class SellerController {
 
     //! Delete product
     @Delete('products/:id')
+    @UseGuards(JwtGuard)
     async deleteProduct(@Param('id', ParseIntPipe) id: number): Promise<string> {
         return this.sellerService.deleteProduct(id);
     }
