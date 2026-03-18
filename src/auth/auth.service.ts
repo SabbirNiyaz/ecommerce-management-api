@@ -1,16 +1,20 @@
 // auth.service.ts
-import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, BadRequestException, UnauthorizedException, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserEntity } from './UserEntity/user.entity';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { ProfileEntity } from './UserEntity/profile.entity';
 
 @Injectable()
 export class AuthService {
     constructor(
         @InjectRepository(UserEntity)
         private readonly userRepository: Repository<UserEntity>,
+
+        @InjectRepository(ProfileEntity)
+        private readonly profileRepository: Repository<ProfileEntity>,
         private readonly jwtService: JwtService,
     ) { }
 
@@ -64,5 +68,107 @@ export class AuthService {
 
         const { password: _, ...userWithoutPassword } = user;
         return { token, user: userWithoutPassword };
+    }
+
+    //! Get User Profile
+    async getUserProfile(): Promise<ProfileEntity[]> {
+        try {
+            return await this.profileRepository.find({
+                relations: ['user'],
+                select: {
+                    id: true,
+                    profileImage: true,
+                    bio: true,
+                    address: true,
+                    phone: true,
+                    isActive: true,
+                    user: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        role: true
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error fetching profiles:', error.message);
+            throw new HttpException(`Error: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    //! Create Profile
+    async createProfile(payload: Partial<ProfileEntity>) {
+        const { profileImage, bio, address, phone, isActive, userId } = payload as any;
+
+        const user = await this.userRepository.findOne({
+            where: {
+                id: userId
+            },
+            relations: ['profile']
+        });
+
+        // Verify Existing
+        if (!user) {
+            throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+        }
+        if (user.profile) {
+            throw new HttpException('User already has a profile', HttpStatus.BAD_REQUEST);
+        }
+
+        // Create and save profile in DB 
+        const userProfile = this.profileRepository.create({
+            profileImage: profileImage,
+            bio: bio,
+            address: address,
+            phone: phone,
+            isActive: isActive,
+            user: user
+        });
+        const result = await this.profileRepository.save(userProfile);
+        // remove password
+        const { password, profile, ...userWithoutPassword } = result.user;
+
+        return {
+            success: true,
+            data: {
+                ...result,
+                user: userWithoutPassword,
+            },
+        }
+    }
+
+    //! Update Profile
+    async updateProfile(profileId: number, payload: Partial<ProfileEntity>) {
+        const { profileImage, bio, address, phone, isActive } = payload as any;
+        // Find profile
+        const profile = await this.profileRepository.findOne({
+            where: { id: profileId },
+            relations: ['user'],
+        });
+
+        // Verify Existing
+        if (!profile) {
+            throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+        }
+        // Update fields
+        if (profileImage !== undefined) profile.profileImage = profileImage;
+        if (bio !== undefined) profile.bio = bio;
+        if (address !== undefined) profile.address = address;
+        if (phone !== undefined) profile.phone = phone;
+        if (isActive !== undefined) profile.isActive = isActive;
+
+        // Save updated profile
+        const result = await this.profileRepository.save(profile);
+        // remove password
+        const { password, ...userWithoutPassword } = result.user;
+
+        return {
+            success: true,
+            data: {
+                ...result,
+                user: userWithoutPassword,
+            },
+        }
     }
 }

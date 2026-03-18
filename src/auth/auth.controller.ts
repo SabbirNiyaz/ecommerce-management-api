@@ -1,7 +1,10 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Get, Put, Param, ParseIntPipe } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignUpDto } from './DTOs/signup.dto';
 import { SignInDto } from './DTOs/signin.dto';
+import { CreateProfileDto } from './DTOs/create-profile.dto';
+import { ProfileEntity } from './UserEntity/profile.entity';
+import { UpdateProfileDto } from './DTOs/update-profile.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -28,5 +31,24 @@ export class AuthController {
             message: 'Login Successful',
             data: result,
         };
+    }
+
+    //! Get User Profile
+    @Get('profile')
+    async getUserProfile() {
+        return this.authService.getUserProfile();
+    }
+
+    //! Create Profile
+    @Post('profile')
+    async createProfile(@Body() body: CreateProfileDto) {
+        return this.authService.createProfile(body);
+    }
+
+    //! Update Profile
+    @Put('profile/:id')
+    async updateProfile(@Param('id', ParseIntPipe) profileId: number,
+        @Body() body: UpdateProfileDto) {
+        return this.authService.updateProfile(profileId, body);
     }
 }
