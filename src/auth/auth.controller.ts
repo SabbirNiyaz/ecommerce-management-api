@@ -1,10 +1,11 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Get, Put, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Get, Put, Param, ParseIntPipe, UseGuards, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignUpDto } from './DTOs/signup.dto';
 import { SignInDto } from './DTOs/signin.dto';
 import { CreateProfileDto } from './DTOs/create-profile.dto';
 import { ProfileEntity } from './UserEntity/profile.entity';
 import { UpdateProfileDto } from './DTOs/update-profile.dto';
+import { JwtGuard } from './jwt.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -35,8 +36,10 @@ export class AuthController {
 
     //! Get User Profile
     @Get('profile')
-    async getUserProfile() {
-        return this.authService.getUserProfile();
+    @UseGuards(JwtGuard)
+    async getUserProfile(@Req() req) {
+        const userId = req.user.id;
+        return this.authService.getUserProfile(userId);
     }
 
     //! Create Profile
