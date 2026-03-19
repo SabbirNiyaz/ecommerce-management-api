@@ -1,17 +1,22 @@
-import { HttpException, HttpStatus, Injectable } from "@nestjs/common"
+import { HttpException, HttpStatus, Injectable, NotFoundException } from "@nestjs/common"
 import { CreateProductDto } from "./dto/create-product.dto"
 import { UpdateProductDto } from "./dto/update-product.dto"
 import { UpdateStockDto } from "./dto/update-stock.dto"
-import { VerifySellerDto } from "./dto/verify-seller.dto"
 import { ProductEntity } from "./entities/product.entity"
 import { InjectRepository } from "@nestjs/typeorm"
 import { MoreThan, Repository } from "typeorm"
+import { ProductImageEntity } from "./entities/product-image.entity"
+import { join } from "path"
+import { existsSync, unlinkSync } from "fs"
 
 @Injectable()
 export class SellerService {
     constructor(
         @InjectRepository(ProductEntity)
         private productRepo: Repository<ProductEntity>,
+
+        @InjectRepository(ProductImageEntity)
+        private productImageRepo: Repository<ProductImageEntity>,
     ) { }
     //! Get all products 
     async getAllProducts(): Promise<ProductEntity[]> {
@@ -27,6 +32,7 @@ export class SellerService {
             order: {
                 id: 'ASC'
             },
+            relations: ['images'],
         })
         if (allProduct.length === 0) {
             throw new HttpException('No product found', HttpStatus.NOT_FOUND);
@@ -46,6 +52,7 @@ export class SellerService {
                 stock: true,
                 status: true,
             },
+            relations: ['images']
         })
         if (singleProduct === null) {
             throw new HttpException(`Product id:${id} is not found`, HttpStatus.NOT_FOUND);
@@ -172,7 +179,7 @@ export class SellerService {
                 status: true,
             },
             order: {
-                price: 'ASC',
+                id: 'ASC',
             },
         });
 
@@ -182,16 +189,96 @@ export class SellerService {
         return filterProduct;
     }
 
-    //! Sellers Info verification
-    sellerInfoVerify(dto: VerifySellerDto, file: Express.Multer.File) {
-        const seller = {
-            id: Date.now().toString(),
-            ...dto,
-            document: file.filename,
-        };
+    //! Save uploaded images linked to a product
+    async saveProductImages(productId: number, files: Express.Multer.File[]) {
+        // Check product exists
+        const product = await this.productRepo.findOne({
+            where: { id: productId },
+            relations: ['images'],
+        });
+        if (!product) {
+            // Cleanup uploaded files if product not found
+            files.forEach((file) => {
+                const filePath = join(process.cwd(), 'src', 'uploads', 'products', file.filename);
+                if (existsSync(filePath)) unlinkSync(filePath);
+            });
+            throw new NotFoundException(`Product #${productId} not found`);
+        }
+
+        // Check if product already has a primary image
+        const hasPrimary = product.images?.some((img) => img.isPrimary);
+
+        // Build image entities
+        const images = files.map((file, index) =>
+            this.productImageRepo.create({
+                filename: file.filename,
+                originalName: file.originalname,
+                url: `/products/images/${file.filename}`,
+                isPrimary: !hasPrimary && index === 0, // only first if no primary exists
+                productId: Number(productId),
+                product,
+            }),
+        );
+
+        const saved = await this.productImageRepo.save(images);
+
         return {
-            message: 'Seller verified successfully',
-            seller,
+            success: true,
+            uploaded: saved.length,
+            images: saved,
+        };
+    }
+
+    //! Delete a single image by image ID
+    async deleteProductImage(imageId: number) {
+        const image = await this.productImageRepo.findOne({
+            where: { id: imageId },
+        });
+
+        if (!image) {
+            throw new NotFoundException(`Image #${imageId} not found`);
+        }
+        // Remove file from disk
+        const filePath = join(process.cwd(), 'src', 'uploads', 'products', image.filename);
+        if (existsSync(filePath)) unlinkSync(filePath);
+
+        await this.productImageRepo.remove(image);
+
+        return {
+            success: true,
+            message: `Image #${imageId} deleted successfully`,
+        };
+    }
+
+    //! Delete All images of product
+    async deleteAllProductImages(productId: number) {
+        const product = await this.productRepo.findOne({
+            where: { id: productId },
+            relations: ['images']
+        });
+
+        if (!product) {
+            throw new NotFoundException(`Product #${productId} not found`);
+        }
+        if (!product.images?.length) {
+            return {
+                success: false,
+                message: 'No images found for this product',
+                deleted: 0
+            };
+        }
+        // Remove each file from disk
+        product.images.forEach((image) => {
+            const filePath = join(process.cwd(), 'src', 'uploads', 'products', image.filename);
+            if (existsSync(filePath)) unlinkSync(filePath);
+        });
+
+        await this.productImageRepo.remove(product.images);
+
+        return {
+            success: true,
+            message: `All images of product #${productId} deleted successfully`,
+            deleted: product.images.length,
         };
     }
 }

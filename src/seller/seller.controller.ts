@@ -1,42 +1,41 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Patch, Query, UseInterceptors, UploadedFile, Res, UseGuards } from "@nestjs/common";
-import type { Response } from "express";
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Patch, Query, UseInterceptors, Res, UseGuards, UploadedFiles, ParseFloatPipe, HttpException, HttpStatus } from "@nestjs/common";
 import { SellerService } from "./seller.service";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { UpdateStockDto } from "./dto/update-stock.dto";
-import { FileInterceptor } from "@nestjs/platform-express";
-import { VerifySellerDto } from "./dto/verify-seller.dto";
+import { FilesInterceptor } from "@nestjs/platform-express";
 import { diskStorage, MulterError } from "multer";
-import { join } from "path/win32";
-import { existsSync } from "fs";
+import { join } from "path";
 import { ProductEntity } from "./entities/product.entity";
 import { JwtGuard } from "src/auth/jwt.guard";
+import { existsSync } from "fs";
+import express from "express";
 
-@Controller('seller')
+@Controller('products')
 export class SellerController {
     constructor(private readonly sellerService: SellerService) { }
 
     //! Get all products
-    @Get('products')
+    @Get()
     async getAllProducts(): Promise<ProductEntity[]> {
         return this.sellerService.getAllProducts();
     }
 
     //! Get products by id
-    @Get('products/:id')
+    @Get('/:id')
     async getProductById(@Param('id', ParseIntPipe) id: number): Promise<ProductEntity> {
         return this.sellerService.getProductById(id);
     }
 
     //! Create product
-    @Post('products')
+    @Post()
     @UseGuards(JwtGuard)
     async createProduct(@Body() pDto: CreateProductDto): Promise<ProductEntity> {
         return this.sellerService.createProduct(pDto);
     }
 
     //! Update product
-    @Put('products/:id')
+    @Put('/:id')
     @UseGuards(JwtGuard)
     async updateProduct(@Param('id', ParseIntPipe) id: number,
         @Body() pDto: UpdateProductDto): Promise<ProductEntity> {
@@ -44,7 +43,7 @@ export class SellerController {
     }
 
     //! Update product stock and status
-    @Patch('products/:id')
+    @Patch('/:id')
     @UseGuards(JwtGuard)
     async updateProductStockAndStatus(@Param('id', ParseIntPipe) id: number,
         @Body() pDto: UpdateStockDto): Promise<ProductEntity> {
@@ -52,14 +51,14 @@ export class SellerController {
     }
 
     //! Delete product
-    @Delete('products/:id')
+    @Delete('/:id')
     @UseGuards(JwtGuard)
     async deleteProduct(@Param('id', ParseIntPipe) id: number): Promise<string> {
         return this.sellerService.deleteProduct(id);
     }
 
     //! Filter product
-    @Get('product')
+    @Get('filter/q')
     async filterProduct(
         @Query('minPrice') minPrice?: number,
         @Query('status') qStatus?: string
@@ -67,51 +66,65 @@ export class SellerController {
         return this.sellerService.filterProduct(minPrice, qStatus);
     }
 
-    //! Sellers Info verification
-    @Post('verifyInfo')
+    //! Upload multiple images for a product
+    @Post('/:productId/images')
+    @UseGuards(JwtGuard)
     @UseInterceptors(
-        FileInterceptor('file', {
+        FilesInterceptor('images', 10, {
             fileFilter: (req, file, cb) => {
-                // Allow only PDF
-                if (file.originalname.match(/^.*\.(pdf)$/)) {
+                if (file.originalname.match(/^.*\.(jpg|jpeg|png|webp)$/i)) {
                     cb(null, true);
                 } else {
                     cb(
-                        new MulterError('LIMIT_UNEXPECTED_FILE', 'Only PDF allowed'),
+                        new MulterError('LIMIT_UNEXPECTED_FILE', 'Only JPG, PNG, WEBP allowed'),
                         false,
                     );
                 }
             },
-            limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit
+            limits: { fileSize: 5 * 1024 * 1024 }, // 5MB per image
             storage: diskStorage({
-                destination: join(process.cwd(), 'src', 'uploads'),
-                filename: function (req, file, cb) {
-                    cb(null, Date.now() + '-' + file.originalname);
+                destination: join(process.cwd(), 'src', 'uploads', 'products'),
+                filename: (req, file, cb) => {
+                    cb(null, `${Date.now()}-${file.originalname}`);
                 },
             }),
         }),
     )
-    sellerInfoVerify(
-        @Body() sDto: VerifySellerDto,
-        @UploadedFile() file: Express.Multer.File,
+    uploadProductImages(
+        @Param('productId', ParseIntPipe) productId: number,
+        @UploadedFiles() files: Express.Multer.File[],
     ) {
-        return this.sellerService.sellerInfoVerify(sDto, file);
+        return this.sellerService.saveProductImages(productId, files);
     }
 
-    //! Get sellers file info
-    @Get('/getFile/:name')
-    getFile(@Param('name') name: string, @Res() res: Response) {
-        // Build the absolute path
-        const filePath = join(process.cwd(), 'src', 'uploads', name);
-        // Check if file exists
+    //! Get image by filename
+    @Get('images/:filename')
+    getProductImage(
+        @Param('filename') filename: string,
+        @Res() res: express.Response,
+    ) {
+        const filePath = join(process.cwd(), 'src', 'uploads', 'products', filename);
         if (!existsSync(filePath)) {
             return res.status(404).json({
                 success: false,
-                message: 'File not found'
+                message: 'Image not found'
             });
         }
-        // Send the file
         return res.sendFile(filePath);
+    }
+
+    //! Delete a single image by image ID
+    @Delete('image/:imageId')
+    @UseGuards(JwtGuard)
+    deleteProductImage(@Param('imageId', ParseIntPipe) imageId: number) {
+        return this.sellerService.deleteProductImage(imageId)
+    }
+
+    //! Delete All images of product
+    @Delete(':productId/images')
+    @UseGuards(JwtGuard)
+    deleteAllProductImages(@Param('productId', ParseIntPipe) productId: number) {
+        return this.sellerService.deleteAllProductImages(productId);
     }
 }
 

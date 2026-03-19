@@ -1,7 +1,8 @@
 import {
-    Column, CreateDateColumn, Entity, PrimaryGeneratedColumn,
+    Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn,
     UpdateDateColumn,
 } from "typeorm";
+import { ProductImageEntity } from "./product-image.entity";
 
 @Entity('products')
 export class ProductEntity {
@@ -35,5 +36,12 @@ export class ProductEntity {
 
     @UpdateDateColumn()
     updatedAt: Date;
+
+    // One product -> many images
+    @OneToMany(() => ProductImageEntity, (image) => image.product, {
+        cascade: true,   
+        eager: true,     
+    })
+    images: ProductImageEntity[];
 
 }
