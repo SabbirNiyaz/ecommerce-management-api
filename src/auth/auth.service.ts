@@ -71,9 +71,10 @@ export class AuthService {
     }
 
     //! Get User Profile
-    async getUserProfile(): Promise<ProfileEntity[]> {
+    async getUserProfile(userId: number): Promise<ProfileEntity> {
         try {
-            return await this.profileRepository.find({
+            const user = await this.profileRepository.findOne({
+                where: { id: userId },
                 relations: ['user'],
                 select: {
                     id: true,
@@ -90,6 +91,12 @@ export class AuthService {
                     }
                 }
             });
+
+            if (!user) {
+                throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+            }
+            return user;
+
         } catch (error) {
             console.error('Error fetching profiles:', error.message);
             throw new HttpException(`Error: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
