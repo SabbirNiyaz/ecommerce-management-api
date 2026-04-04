@@ -4,24 +4,24 @@ import { UserEntity } from './user.entity';
 @Entity('profiles')
 export class ProfileEntity {
     @PrimaryGeneratedColumn()
-    id: number;
+    id?: number;
 
     @Column({ nullable: true })
-    profileImage: string;
+    profileImage?: string;
 
     @Column({ nullable: true })
-    bio: string;
+    bio?: string;
 
     @Column({ nullable: true })
-    address: string;
+    address?: string;
 
     @Column({ nullable: true })
-    phone: string;
+    phone?: string;
 
     @Column({ default: true })
-    isActive: boolean;
+    isActive?: boolean;
 
     @OneToOne(() => UserEntity, user => user.profile, { onDelete: 'CASCADE' })
     @JoinColumn()
-    user: UserEntity;
+    user?: UserEntity;
 }

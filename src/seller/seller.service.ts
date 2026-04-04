@@ -67,7 +67,8 @@ export class SellerService {
             const newProduct = await this.productRepo.create(pDto);
 
             // Automatically set status based on stock 
-            if (newProduct.stock < 1) {
+            const stock = newProduct.stock ?? 0;
+            if (stock < 1) {
                 newProduct.status = "out_of_stock";
             } else {
                 newProduct.status = "available";
@@ -76,7 +77,7 @@ export class SellerService {
             // Save to database
             return await this.productRepo.save(newProduct);
 
-        } catch (error) {
+        } catch (error: any | string) {
             console.error('Error creating product:', error.message);
             throw new HttpException(`Error: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -90,7 +91,8 @@ export class SellerService {
         }
         try {
             // Automatically set status based on stock 
-            if (findProduct.stock < 1) {
+            const currentStock = findProduct.stock ?? 0;
+            if (currentStock < 1) {
                 findProduct.status = "out_of_stock";
             } else {
                 findProduct.status = "available";
@@ -102,7 +104,7 @@ export class SellerService {
             const updateProduct = await this.productRepo.save(findProduct);
             return updateProduct;
 
-        } catch (error) {
+        } catch (error: any | string) {
             console.error('Error updating product:', error.message);
             throw new HttpException(`Error: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -129,7 +131,7 @@ export class SellerService {
             const updateProduct = await this.productRepo.save(findProduct);
             return updateProduct;
 
-        } catch (error) {
+        } catch (error: any | string) {
             console.error('Error updating product:', error.message);
             throw new HttpException(`Error: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -148,7 +150,7 @@ export class SellerService {
                 message: `User with ID ${id} has been deleted`,
             };
 
-        } catch (error) {
+        } catch (error: any | string) {
             console.error('Error deleting product:', error.message);
             throw new HttpException(`Error: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
 
@@ -199,8 +201,10 @@ export class SellerService {
         if (!product) {
             // Cleanup uploaded files if product not found
             files.forEach((file) => {
-                const filePath = join(process.cwd(), 'src', 'uploads', 'products', file.filename);
-                if (existsSync(filePath)) unlinkSync(filePath);
+                if (file.filename) {
+                    const filePath = join(process.cwd(), 'src', 'uploads', 'products', file.filename);
+                    if (existsSync(filePath)) unlinkSync(filePath);
+                }
             });
             throw new NotFoundException(`Product #${productId} not found`);
         }
@@ -239,8 +243,10 @@ export class SellerService {
             throw new NotFoundException(`Image #${imageId} not found`);
         }
         // Remove file from disk
-        const filePath = join(process.cwd(), 'src', 'uploads', 'products', image.filename);
-        if (existsSync(filePath)) unlinkSync(filePath);
+        if (image.filename) {
+            const filePath = join(process.cwd(), 'src', 'uploads', 'products', image.filename);
+            if (existsSync(filePath)) unlinkSync(filePath);
+        }
 
         await this.productImageRepo.remove(image);
 
@@ -269,8 +275,10 @@ export class SellerService {
         }
         // Remove each file from disk
         product.images.forEach((image) => {
-            const filePath = join(process.cwd(), 'src', 'uploads', 'products', image.filename);
-            if (existsSync(filePath)) unlinkSync(filePath);
+            if (image.filename) {
+                const filePath = join(process.cwd(), 'src', 'uploads', 'products', image.filename);
+                if (existsSync(filePath)) unlinkSync(filePath);
+            }
         });
 
         await this.productImageRepo.remove(product.images);

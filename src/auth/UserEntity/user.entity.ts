@@ -4,20 +4,20 @@ import { ProfileEntity } from './profile.entity';
 @Entity('users')
 export class UserEntity {
   @PrimaryGeneratedColumn()
-  id: number;
+  id?: number;
 
   @Column()
-  name: string;
+  name?: string;
 
   @Column({ unique: true })
-  email: string;
+  email?: string;
 
   @Column()
-  password: string;
+  password?: string;
 
   @Column({ default: 'seller' })
-  role: string;
+  role?: string;
 
   @OneToOne(() => ProfileEntity, profile => profile.user)
-  profile: ProfileEntity;
+  profile?: ProfileEntity;
 }
