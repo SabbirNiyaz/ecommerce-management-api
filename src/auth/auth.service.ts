@@ -50,7 +50,7 @@ export class AuthService {
     async signIn(email: string, password: string) {
         const user = await this.userRepository.findOne({ where: { email } });
 
-        if (!user) {
+        if (!user || !user.password) {
             throw new UnauthorizedException('Invalid email or password');
         }
 
@@ -97,7 +97,7 @@ export class AuthService {
             }
             return user;
 
-        } catch (error) {
+        } catch (error: any | string) {
             console.error('Error fetching profiles:', error.message);
             throw new HttpException(`Error: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -134,7 +134,7 @@ export class AuthService {
         });
         const result = await this.profileRepository.save(userProfile);
         // remove password
-        const { password, profile, ...userWithoutPassword } = result.user;
+        const { password: _, profile: __, ...userWithoutPassword } = result.user || {};
 
         return {
             success: true,
@@ -168,7 +168,7 @@ export class AuthService {
         // Save updated profile
         const result = await this.profileRepository.save(profile);
         // remove password
-        const { password, ...userWithoutPassword } = result.user;
+        const { password: _, ...userWithoutPassword } = result.user || {};
 
         return {
             success: true,
