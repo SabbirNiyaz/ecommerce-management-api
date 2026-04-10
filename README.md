@@ -7,12 +7,14 @@ A **scalable RESTful API** built with **NestJS + TypeORM + PostgreSQL** for mana
 ## 📌 Features
 
 - 🔐 JWT Authentication & Authorization (Seller & Admin)
+- 🔑 Password Hashing using bcrypt
 - 📦 Product CRUD Operations
 - 🖼️ Multiple Image Upload System (Multer)
 - 👤 User Profile Management
 - 🗄️ PostgreSQL Relational Database
 - ✅ DTO Validation (class-validator & class-transformer)
 - ⚡ Clean & Modular Architecture
+- 🧠 Smart Business Logic (Auto status, validation checks)
 
 ---
 
@@ -31,20 +33,20 @@ A **scalable RESTful API** built with **NestJS + TypeORM + PostgreSQL** for mana
 
 ## 👤 Users Table
 
-| Column | Type (PostgreSQL) | Description |
-|--------|------------------|------------|
+| Column | Type | Description |
+|--------|------|------------|
 | id | SERIAL (PK) | Primary key |
 | name | VARCHAR | User name |
 | email | VARCHAR (UNIQUE) | User email |
-| password | VARCHAR | User password |
-| role | VARCHAR | Role (seller/admin) |
+| password | VARCHAR | Hashed password (bcrypt) |
+| role | VARCHAR | seller / admin |
 
 ---
 
 ## 👤 Profiles Table
 
-| Column | Type (PostgreSQL) | Description |
-|--------|------------------|------------|
+| Column | Type | Description |
+|--------|------|------------|
 | id | SERIAL (PK) | Primary key |
 | profileImage | VARCHAR | Profile image |
 | bio | TEXT | User bio |
@@ -57,8 +59,8 @@ A **scalable RESTful API** built with **NestJS + TypeORM + PostgreSQL** for mana
 
 ## 📦 Products Table
 
-| Column | Type (PostgreSQL) | Description |
-|--------|------------------|------------|
+| Column | Type | Description |
+|--------|------|------------|
 | id | SERIAL (PK) | Primary key |
 | category | VARCHAR(50) | Product category |
 | name | VARCHAR(100) | Product name |
@@ -73,8 +75,8 @@ A **scalable RESTful API** built with **NestJS + TypeORM + PostgreSQL** for mana
 
 ## 🖼️ Product Images Table
 
-| Column | Type (PostgreSQL) | Description |
-|--------|------------------|------------|
+| Column | Type | Description |
+|--------|------|------------|
 | id | SERIAL (PK) | Primary key |
 | filename | VARCHAR | Stored filename |
 | originalName | VARCHAR | Original file name |
@@ -92,7 +94,7 @@ A **scalable RESTful API** built with **NestJS + TypeORM + PostgreSQL** for mana
 | Method | Endpoint | Description |
 |--------|---------|------------|
 | GET | `/products` | Get all products |
-| GET | `/products/filter?minPrice=&status=` | Filter products |
+| GET | `/products/filter?minPrice=&status=` | Filter products (dynamic query) |
 | GET | `/products/:id` | Get product by ID |
 | POST | `/products` | Create product (**Seller only**) |
 | PUT | `/products/:id` | Update product |
@@ -117,7 +119,7 @@ A **scalable RESTful API** built with **NestJS + TypeORM + PostgreSQL** for mana
 | Method | Endpoint | Description |
 |--------|---------|------------|
 | POST | `/auth/signup` | Register user |
-| POST | `/auth/signin` | Login user |
+| POST | `/auth/signin` | Login user (returns JWT) |
 
 ---
 
@@ -153,6 +155,63 @@ A **scalable RESTful API** built with **NestJS + TypeORM + PostgreSQL** for mana
 ## 👤 Profile Validation
 - Phone must match: `01XXXXXXXXX`  
 - Boolean fields must be true/false  
+
+---
+
+# 🧠 Business Logic Highlights
+
+### 🔑 Authentication
+- Passwords are hashed using **bcrypt**
+- JWT token includes:
+  - id, name, email, role
+
+---
+
+### 📦 Product Logic
+- Product status is **auto-managed**:
+  - `stock < 1 → out_of_stock`
+  - `stock ≥ 1 → available`
+- Prevents update if **no changes detected**
+
+---
+
+### 🔄 Stock & Status Sync
+- If status = `out_of_stock` → stock = 0  
+- If stock = 0 → status = `out_of_stock`  
+
+---
+
+### 🔍 Filtering Logic
+- Dynamic filtering using:
+  - `minPrice`
+  - `status`
+- Uses **TypeORM MoreThan()**
+
+---
+
+### 🖼️ Image Handling
+- First uploaded image becomes **primary image**
+- If product not found:
+  - Uploaded files are **auto-deleted (cleanup)**
+- Image deletion removes:
+  - DB record
+  - Physical file from storage
+
+---
+
+### 👤 Profile Logic
+- One user → only one profile
+- Prevent duplicate profile creation
+- Prevent update if no changes detected
+
+---
+
+### ❌ Error Handling
+- Custom exceptions:
+  - NotFoundException
+  - UnauthorizedException
+  - BadRequestException
+- Consistent error responses with HTTP status codes
 
 ---
 
