@@ -4,27 +4,27 @@ import { IsString, IsNumber, IsNotEmpty, Min, IsOptional, IsIn } from 'class-val
 export class CreateProductDto {
     @IsString({ message: 'Category must be a string' })
     @IsNotEmpty({ message: 'Category is required' })
-    category: string;
+    category!: string;
 
     @IsString({ message: 'Product name must be a string' })
     @IsNotEmpty({ message: 'Product name is required' })
-    name: string;
+    name!: string;
 
     @IsString({ message: 'Description must be a string' })
     @IsNotEmpty({ message: 'Description is required' })
-    description: string;
+    description!: string;
 
     @Type(() => Number)
     @IsNumber({}, { message: 'Price must be a number' })
     @IsNotEmpty({ message: 'Price is required' })
     @Min(1, { message: 'Price must be at least 1' })
-    price: number;
+    price!: number;
 
     @Type(() => Number)
     @IsNumber({}, { message: 'Stock must be a number' })
     @IsNotEmpty({ message: 'Stock is required' })
     @Min(0, { message: 'Stock cannot be negative' })
-    stock: number;
+    stock!: number;
 
     @IsOptional()
     @IsIn(['available', 'out_of_stock'], {

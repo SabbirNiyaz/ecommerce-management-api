@@ -6,7 +6,7 @@ export class UpdateStockDto {
   @IsNumber({}, { message: 'Stock must be a valid number' })
   @IsOptional()
   @Min(0, { message: 'Stock cannot be negative' })
-  stock: number;
+  stock?: number;
 
   @IsNotEmpty({ message: 'Status is required' })
   @IsIn(['available', 'out_of_stock'], {

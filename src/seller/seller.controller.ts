@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Patch, Query, UseInterceptors, Res, UseGuards, UploadedFiles, ParseFloatPipe, HttpException, HttpStatus } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Patch, Query, UseInterceptors, Res, UseGuards, UploadedFiles, HttpException, HttpStatus, Req } from "@nestjs/common";
 import { SellerService } from "./seller.service";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
@@ -10,15 +10,26 @@ import { ProductEntity } from "./entities/product.entity";
 import { JwtGuard } from "src/auth/jwt.guard";
 import { existsSync } from "fs";
 import express from "express";
+import { Type } from "class-transformer";
 
 @Controller('products')
 export class SellerController {
     constructor(private readonly sellerService: SellerService) { }
 
+    //---------------------------------- Product Get, Upload & Management ----------------------------------//
     //! Get all products
     @Get()
     async getAllProducts(): Promise<ProductEntity[]> {
         return this.sellerService.getAllProducts();
+    }
+
+    //! Filter product
+    @Get('/filter')
+    async filterProduct(
+        @Query('minPrice') minPrice?: number,
+        @Query('status') qStatus?: string
+    ): Promise<ProductEntity[]> {
+        return this.sellerService.filterProduct(minPrice, qStatus);
     }
 
     //! Get products by id
@@ -30,7 +41,11 @@ export class SellerController {
     //! Create product
     @Post()
     @UseGuards(JwtGuard)
-    async createProduct(@Body() pDto: CreateProductDto): Promise<ProductEntity> {
+    async createProduct(@Body() pDto: CreateProductDto, @Req() req: any): Promise<ProductEntity> {
+        // Check user role
+        if (req.user.role !== 'seller') {
+            throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+        }
         return this.sellerService.createProduct(pDto);
     }
 
@@ -38,7 +53,11 @@ export class SellerController {
     @Put('/:id')
     @UseGuards(JwtGuard)
     async updateProduct(@Param('id', ParseIntPipe) id: number,
-        @Body() pDto: UpdateProductDto): Promise<ProductEntity> {
+        @Body() pDto: UpdateProductDto, @Req() req: any): Promise<ProductEntity> {
+        // Check user role
+        if (req.user.role !== 'seller') {
+            throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+        }
         return this.sellerService.updateProduct(id, pDto);
     }
 
@@ -46,24 +65,40 @@ export class SellerController {
     @Patch('/:id')
     @UseGuards(JwtGuard)
     async updateProductStockAndStatus(@Param('id', ParseIntPipe) id: number,
-        @Body() pDto: UpdateStockDto): Promise<ProductEntity> {
+        @Body() pDto: UpdateStockDto, @Req() req: any): Promise<ProductEntity> {
+        // Check user role
+        if (req.user.role !== 'seller') {
+            throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+        }
         return this.sellerService.updateProductStockAndStatus(id, pDto);
     }
 
     //! Delete product
     @Delete('/:id')
     @UseGuards(JwtGuard)
-    async deleteProduct(@Param('id', ParseIntPipe) id: number): Promise<string> {
+    async deleteProduct(@Param('id', ParseIntPipe) id: number, @Req() req: any): Promise<string> {
+        // Check user role
+        if (req.user.role !== 'seller') {
+            throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+        }
         return this.sellerService.deleteProduct(id);
     }
 
-    //! Filter product
-    @Get('filter/q')
-    async filterProduct(
-        @Query('minPrice') minPrice?: number,
-        @Query('status') qStatus?: string
-    ): Promise<ProductEntity[]> {
-        return this.sellerService.filterProduct(minPrice, qStatus);
+    //---------------------------------- Image Get, Upload & Management ----------------------------------//
+    //! Get image by filename
+    @Get('images/:filename')
+    getProductImage(
+        @Param('filename') filename: string,
+        @Res() res: express.Response,
+    ) {
+        const filePath = join(process.cwd(), 'src', 'uploads', 'products', filename);
+        if (!existsSync(filePath)) {
+            return res.status(404).json({
+                success: false,
+                message: 'Image not found'
+            });
+        }
+        return res.sendFile(filePath);
     }
 
     //! Upload multiple images for a product
@@ -93,37 +128,34 @@ export class SellerController {
     uploadProductImages(
         @Param('productId', ParseIntPipe) productId: number,
         @UploadedFiles() files: Express.Multer.File[],
+        @Req() req: any
     ) {
-        return this.sellerService.saveProductImages(productId, files);
-    }
-
-    //! Get image by filename
-    @Get('images/:filename')
-    getProductImage(
-        @Param('filename') filename: string,
-        @Res() res: express.Response,
-    ) {
-        const filePath = join(process.cwd(), 'src', 'uploads', 'products', filename);
-        if (!existsSync(filePath)) {
-            return res.status(404).json({
-                success: false,
-                message: 'Image not found'
-            });
+        // Check user role
+        if (req.user.role !== 'seller') {
+            throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
         }
-        return res.sendFile(filePath);
+        return this.sellerService.saveProductImages(productId, files);
     }
 
     //! Delete a single image by image ID
     @Delete('image/:imageId')
     @UseGuards(JwtGuard)
-    deleteProductImage(@Param('imageId', ParseIntPipe) imageId: number) {
+    deleteProductImage(@Param('imageId', ParseIntPipe) imageId: number, @Req() req: any) {
+        // Check user role
+        if (req.user.role !== 'seller') {
+            throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+        }
         return this.sellerService.deleteProductImage(imageId)
     }
 
     //! Delete All images of product
     @Delete(':productId/images')
     @UseGuards(JwtGuard)
-    deleteAllProductImages(@Param('productId', ParseIntPipe) productId: number) {
+    deleteAllProductImages(@Param('productId', ParseIntPipe) productId: number, @Req() req: any) {
+        // Check user role
+        if (req.user.role !== 'seller') {
+            throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+        }
         return this.sellerService.deleteAllProductImages(productId);
     }
 }

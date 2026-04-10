@@ -10,16 +10,16 @@ export class ProductEntity {
     id?: number;
 
     @Column({ type: 'varchar', length: 50 })
-    category?: string;
+    category!: string;
 
     @Column({ type: 'varchar', length: 100 })
-    name?: string;
+    name!: string;
 
     @Column({ type: 'varchar', length: 255 })
-    description?: string;
+    description!: string;
 
     @Column({ type: 'decimal', precision: 10, scale: 2 })
-    price?: number;
+    price!: number;
 
     @Column({ type: 'integer', default: 1 })
     stock?: number;

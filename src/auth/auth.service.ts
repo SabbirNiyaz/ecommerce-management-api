@@ -99,8 +99,7 @@ export class AuthService {
             return user;
 
         } catch (error: any | string) {
-            console.error('Error fetching profiles:', error.message);
-            throw new HttpException(`Error: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new HttpException(`Error: ${error.message}`, error.status ? error.status : HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -187,5 +186,20 @@ export class AuthService {
                 user: userWithoutPassword,
             },
         }
+    }
+
+    //------------------------- User Routes -------------------------//
+    //! Delete User (Admin Only)
+    async deleteUser(id: number,) {
+        const user = await this.userRepository.findOne({ where: { id } });
+        if (!user) {
+            throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+        }
+        await this.userRepository.remove(user);
+        return {
+            success: true,
+            message: `User Id:${id} deleted successfully`,
+        };
+
     }
 }
