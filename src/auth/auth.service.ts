@@ -17,7 +17,7 @@ export class AuthService {
         private readonly profileRepository: Repository<ProfileEntity>,
         private readonly jwtService: JwtService,
     ) { }
-
+    //------------------------- Authentication Routes -------------------------//
     //! Sign Up
     async signUp(payload: Partial<UserEntity>) {
         const { name, email, password, role } = payload;
@@ -70,6 +70,7 @@ export class AuthService {
         return { token, user: userWithoutPassword };
     }
 
+    //------------------------- Profile Routes -------------------------//
     //! Get User Profile
     async getUserProfile(userId: number): Promise<ProfileEntity> {
         try {
@@ -146,11 +147,11 @@ export class AuthService {
     }
 
     //! Update Profile
-    async updateProfile(profileId: number, payload: Partial<ProfileEntity>) {
+    async updateProfile(userId: number, payload: Partial<ProfileEntity>) {
         const { profileImage, bio, address, phone, isActive } = payload as any;
         // Find profile
         const profile = await this.profileRepository.findOne({
-            where: { id: profileId },
+            where: { id: userId },
             relations: ['user'],
         });
 
@@ -158,6 +159,15 @@ export class AuthService {
         if (!profile) {
             throw new HttpException('User not found', HttpStatus.NOT_FOUND);
         }
+        // Check if any changes were made
+        if (profileImage === profile.profileImage &&
+            bio === profile.bio &&
+            address === profile.address &&
+            phone === profile.phone &&
+            isActive === profile.isActive) {
+            throw new HttpException('No changes detected', HttpStatus.BAD_REQUEST);
+        }
+
         // Update fields
         if (profileImage !== undefined) profile.profileImage = profileImage;
         if (bio !== undefined) profile.bio = bio;

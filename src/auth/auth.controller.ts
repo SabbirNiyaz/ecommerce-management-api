@@ -10,7 +10,7 @@ import { JwtGuard } from './jwt.guard';
 @Controller('auth')
 export class AuthController {
     constructor(private readonly authService: AuthService) { }
-
+    //------------------------- Authentication Routes -------------------------//
     //! Sign Up
     @Post('signup')
     async signUp(@Body() body: SignUpDto) {
@@ -34,6 +34,7 @@ export class AuthController {
         };
     }
 
+    //------------------------- Profile Routes -------------------------//
     //! Get User Profile
     @Get('profile')
     @UseGuards(JwtGuard)
@@ -49,9 +50,11 @@ export class AuthController {
     }
 
     //! Update Profile
-    @Put('profile/:id')
-    async updateProfile(@Param('id', ParseIntPipe) profileId: number,
+    @Put('profile-update')
+    @UseGuards(JwtGuard)
+    async updateProfile(@Req() req,
         @Body() body: UpdateProfileDto) {
-        return this.authService.updateProfile(profileId, body);
+        const userId = req.user.id as number;
+        return this.authService.updateProfile(userId, body);
     }
 }

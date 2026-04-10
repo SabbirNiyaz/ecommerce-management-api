@@ -29,5 +29,5 @@ export class CreateProfileDto {
     @IsNotEmpty({ message: 'User ID is required' })
     @Type(() => Number)
     @IsNumber({}, { message: 'User ID must be a number' })
-    userId: number;
+    userId?: number;
 }

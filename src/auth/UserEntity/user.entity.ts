@@ -7,13 +7,13 @@ export class UserEntity {
   id?: number;
 
   @Column()
-  name?: string;
+  name!: string;
 
   @Column({ unique: true })
-  email?: string;
+  email!: string;
 
   @Column()
-  password?: string;
+  password!: string;
 
   @Column({ default: 'seller' })
   role?: string;
