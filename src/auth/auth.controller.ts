@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Get, Put, Param, ParseIntPipe, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Get, Put, Param, ParseIntPipe, UseGuards, Req, HttpException, Delete } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignUpDto } from './DTOs/signup.dto';
 import { SignInDto } from './DTOs/signin.dto';
@@ -56,5 +56,16 @@ export class AuthController {
         @Body() body: UpdateProfileDto) {
         const userId = req.user.id as number;
         return this.authService.updateProfile(userId, body);
+    }
+
+    //------------------------- User Routes -------------------------//
+    //! Delete User (Admin Only)
+    @Delete('/delete/user/:id')
+    @UseGuards(JwtGuard)
+    async deleteUser(@Param('id', ParseIntPipe) id: number, @Req() req) {
+        if (req.user.role !== 'admin') {
+            throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+        }
+        return this.authService.deleteUser(id);
     }
 }

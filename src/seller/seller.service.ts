@@ -8,6 +8,7 @@ import { MoreThan, Repository } from "typeorm"
 import { ProductImageEntity } from "./entities/product-image.entity"
 import { join } from "path"
 import { existsSync, unlinkSync } from "fs"
+import e from "express"
 
 @Injectable()
 export class SellerService {
@@ -18,6 +19,7 @@ export class SellerService {
         @InjectRepository(ProductImageEntity)
         private productImageRepo: Repository<ProductImageEntity>,
     ) { }
+    //---------------------------------- Product Get, Upload & Management ----------------------------------//
     //! Get all products 
     async getAllProducts(): Promise<ProductEntity[]> {
         const allProduct = await this.productRepo.find({
@@ -38,6 +40,44 @@ export class SellerService {
             throw new HttpException('No product found', HttpStatus.NOT_FOUND);
         }
         return allProduct;
+    }
+
+    //! Filter product
+    async filterProduct(minPrice?: number, qStatus?: string): Promise<ProductEntity[]> {
+        try {
+            // Build where conditions dynamically
+            const where: any[] = [];
+
+            if (qStatus) {
+                where.push({ status: qStatus });
+            }
+            if (minPrice !== undefined) {
+                where.push({ price: MoreThan(minPrice) });
+            }
+
+            // If no filters, just get all
+            const filterProduct = await this.productRepo.find({
+                where: where.length > 0 ? where : undefined,
+                select: {
+                    id: true,
+                    name: true,
+                    description: true,
+                    price: true,
+                    stock: true,
+                    status: true,
+                },
+                order: {
+                    id: 'ASC',
+                },
+            });
+
+            if (!filterProduct || filterProduct.length === 0) {
+                throw new HttpException('No product found', HttpStatus.NOT_FOUND);
+            }
+            return filterProduct;
+        } catch (error: any | string) {
+            throw new HttpException(`Error: ${error.message}`, error.status ? error.status : HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     //! Get products by id
@@ -85,11 +125,23 @@ export class SellerService {
 
     //! Update product
     async updateProduct(id: number, pDto: UpdateProductDto): Promise<ProductEntity> {
-        const findProduct = await this.productRepo.findOneBy({ id })
-        if (findProduct === null) {
-            throw new HttpException(`Product id:${id} is not found`, HttpStatus.NOT_FOUND);
-        }
         try {
+            const findProduct = await this.productRepo.findOneBy({ id })
+            if (findProduct === null) {
+                throw new HttpException(`Product id:${id} is not found`, HttpStatus.NOT_FOUND);
+            }
+            // Check if any changes are made
+            const hasNoChanges =
+                (pDto.name === undefined || pDto.name === findProduct.name) &&
+                (pDto.description === undefined || pDto.description === findProduct.description) &&
+                (pDto.price === undefined || Number(pDto.price) === Number(findProduct.price)) &&
+                (pDto.stock === undefined || Number(pDto.stock) === Number(findProduct.stock)) &&
+                (pDto.status === undefined || pDto.status === findProduct.status) &&
+                (pDto.category === undefined || pDto.category === findProduct.category);
+
+            if (hasNoChanges) {
+                throw new HttpException('No changes detected', HttpStatus.BAD_REQUEST);
+            }
             // Automatically set status based on stock 
             const currentStock = findProduct.stock ?? 0;
             if (currentStock < 1) {
@@ -97,6 +149,7 @@ export class SellerService {
             } else {
                 findProduct.status = "available";
             }
+
             // Merge DTO into found product
             Object.assign(findProduct, pDto);
 
@@ -105,18 +158,23 @@ export class SellerService {
             return updateProduct;
 
         } catch (error: any | string) {
-            console.error('Error updating product:', error.message);
-            throw new HttpException(`Error: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new HttpException(`Error: ${error.message}`, error.status ? error.status : HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     //! Update product stock and status
     async updateProductStockAndStatus(id: number, pDto: UpdateStockDto): Promise<ProductEntity> {
-        const findProduct = await this.productRepo.findOneBy({ id })
-        if (findProduct === null) {
-            throw new HttpException(`Product id:${id} is not found`, HttpStatus.NOT_FOUND);
-        }
         try {
+            const findProduct = await this.productRepo.findOneBy({ id })
+            if (findProduct === null) {
+                throw new HttpException(`Product id:${id} is not found`, HttpStatus.NOT_FOUND);
+            }
+
+            // Check if any changes are made
+            if ((pDto.stock === undefined || Number(pDto.stock) === Number(findProduct.stock)) &&
+                (pDto.status === undefined || pDto.status === findProduct.status)) {
+                throw new HttpException('No changes detected', HttpStatus.BAD_REQUEST);
+            }
             // Automatically set stock based on status 
             if (pDto.status === "out_of_stock") {
                 pDto.stock = 0;
@@ -132,8 +190,7 @@ export class SellerService {
             return updateProduct;
 
         } catch (error: any | string) {
-            console.error('Error updating product:', error.message);
-            throw new HttpException(`Error: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new HttpException(`Error: ${error.message}`, error.status ? error.status : HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -151,46 +208,11 @@ export class SellerService {
             };
 
         } catch (error: any | string) {
-            console.error('Error deleting product:', error.message);
-            throw new HttpException(`Error: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
-
+            throw new HttpException(`Error: ${error.message}`, error.status ? error.status : HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    //! Filter product
-    async filterProduct(minPrice?: number, qStatus?: string): Promise<ProductEntity[]> {
-        // Build where conditions dynamically
-        const where: any[] = [];
-
-        if (qStatus) {
-            where.push({ status: qStatus });
-        }
-        if (minPrice !== undefined) {
-            where.push({ price: MoreThan(minPrice) });
-        }
-
-        // If no filters, just get all
-        const filterProduct = await this.productRepo.find({
-            where: where.length > 0 ? where : undefined,
-            select: {
-                id: true,
-                name: true,
-                description: true,
-                price: true,
-                stock: true,
-                status: true,
-            },
-            order: {
-                id: 'ASC',
-            },
-        });
-
-        if (!filterProduct || filterProduct.length === 0) {
-            throw new HttpException('No product found', HttpStatus.NOT_FOUND);
-        }
-        return filterProduct;
-    }
-
+    //---------------------------------- Image Get, Upload & Management ----------------------------------//
     //! Save uploaded images linked to a product
     async saveProductImages(productId: number, files: Express.Multer.File[]) {
         // Check product exists

@@ -11,6 +11,9 @@ async function bootstrap() {
       whitelist: true,             // remove extra properties not in DTO
       forbidNonWhitelisted: true,  // throw error if extra properties sent
       transform: true,             // automatically convert types (string to number)
+      transformOptions: {
+        enableImplicitConversion: true, // allow implicit type conversion based on DTO types
+      }
     }),
   );
 
