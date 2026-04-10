@@ -1,99 +1,181 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# 🚀 NestJS E-commerce Backend API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A **scalable RESTful API** built with **NestJS + TypeORM + PostgreSQL** for managing products, product images, authentication, and user profiles with secure **JWT-based authentication** and **role-based authorization**.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## 📌 Features
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- 🔐 JWT Authentication & Authorization (Seller & Admin)
+- 📦 Product CRUD Operations
+- 🖼️ Multiple Image Upload System (Multer)
+- 👤 User Profile Management
+- 🗄️ PostgreSQL Relational Database
+- ✅ DTO Validation (class-validator & class-transformer)
+- ⚡ Clean & Modular Architecture
 
-## Project setup
+---
 
-```bash
-$ npm install
-```
+# 🗄️ Database Relationships
 
-## Compile and run the project
+| Relationship | Type | Description |
+|-------------|------|------------|
+| User → Profile | One-to-One | One user has one profile |
+| Profile → User | One-to-One | Profile belongs to one user |
+| Product → ProductImage | One-to-Many | One product can have multiple images |
+| ProductImage → Product | Many-to-One | Each image belongs to one product |
 
-```bash
-# development
-$ npm run start
+---
 
-# watch mode
-$ npm run start:dev
+# 📊 Database Tables & Columns (PostgreSQL)
 
-# production mode
-$ npm run start:prod
-```
+## 👤 Users Table
 
-## Run tests
+| Column | Type (PostgreSQL) | Description |
+|--------|------------------|------------|
+| id | SERIAL (PK) | Primary key |
+| name | VARCHAR | User name |
+| email | VARCHAR (UNIQUE) | User email |
+| password | VARCHAR | User password |
+| role | VARCHAR | Role (seller/admin) |
 
-```bash
-# unit tests
-$ npm run test
+---
 
-# e2e tests
-$ npm run test:e2e
+## 👤 Profiles Table
 
-# test coverage
-$ npm run test:cov
-```
+| Column | Type (PostgreSQL) | Description |
+|--------|------------------|------------|
+| id | SERIAL (PK) | Primary key |
+| profileImage | VARCHAR | Profile image |
+| bio | TEXT | User bio |
+| address | TEXT | Address |
+| phone | VARCHAR | Phone number |
+| isActive | BOOLEAN | Profile status |
+| userId | INTEGER (FK) | Reference to Users |
 
-## Deployment
+---
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## 📦 Products Table
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+| Column | Type (PostgreSQL) | Description |
+|--------|------------------|------------|
+| id | SERIAL (PK) | Primary key |
+| category | VARCHAR(50) | Product category |
+| name | VARCHAR(100) | Product name |
+| description | TEXT | Product description |
+| price | DECIMAL(10,2) | Product price |
+| stock | INTEGER | Available stock |
+| status | ENUM | available / out_of_stock |
+| createdAt | TIMESTAMP | Created time |
+| updatedAt | TIMESTAMP | Updated time |
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+---
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## 🖼️ Product Images Table
 
-## Resources
+| Column | Type (PostgreSQL) | Description |
+|--------|------------------|------------|
+| id | SERIAL (PK) | Primary key |
+| filename | VARCHAR | Stored filename |
+| originalName | VARCHAR | Original file name |
+| url | VARCHAR | Image URL |
+| isPrimary | BOOLEAN | Primary image |
+| createdAt | TIMESTAMP | Upload time |
+| productId | INTEGER (FK) | Reference to Products |
 
-Check out a few resources that may come in handy when working with NestJS:
+---
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+# 📊 API Routes
 
-## Support
+## 📦 Product Routes
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+| Method | Endpoint | Description |
+|--------|---------|------------|
+| GET | `/products` | Get all products |
+| GET | `/products/filter?minPrice=&status=` | Filter products |
+| GET | `/products/:id` | Get product by ID |
+| POST | `/products` | Create product (**Seller only**) |
+| PUT | `/products/:id` | Update product |
+| PATCH | `/products/:id` | Update stock & status |
+| DELETE | `/products/:id` | Delete product |
 
-## Stay in touch
+---
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## 🖼️ Product Image Routes
 
-## License
+| Method | Endpoint | Description |
+|--------|---------|------------|
+| GET | `/products/images/:filename` | Get image file |
+| POST | `/products/:productId/images` | Upload multiple images |
+| DELETE | `/products/image/:imageId` | Delete single image |
+| DELETE | `/products/:productId/images` | Delete all images |
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
-"# ecommerce-management-api" 
+---
+
+## 🔐 Authentication Routes
+
+| Method | Endpoint | Description |
+|--------|---------|------------|
+| POST | `/auth/signup` | Register user |
+| POST | `/auth/signin` | Login user |
+
+---
+
+## 👤 Profile Routes
+
+| Method | Endpoint | Description |
+|--------|---------|------------|
+| GET | `/auth/profile` | Get logged-in profile |
+| POST | `/auth/profile` | Create profile |
+| PUT | `/auth/profile-update` | Update profile |
+
+---
+
+## 🛡️ Admin Route
+
+| Method | Endpoint | Description |
+|--------|---------|------------|
+| DELETE | `/auth/delete/user/:id` | Delete user (**Admin only**) |
+
+---
+
+# 📥 DTO Validation Rules
+
+## 📦 Product Validation
+- Price must be ≥ 1  
+- Stock must be ≥ 0  
+- Status must be: `available` or `out_of_stock`  
+
+## 🔐 Authentication Validation
+- Email must be valid  
+- Password must be at least 6 characters  
+
+## 👤 Profile Validation
+- Phone must match: `01XXXXXXXXX`  
+- Boolean fields must be true/false  
+
+---
+
+# 🔐 Authentication & Authorization
+
+- Uses **JWT Guard** for protected routes  
+- Role-based access:
+  - **Seller** → Manage products & images  
+  - **Admin** → Delete users  
+
+---
+
+# 🖼️ File Upload System
+
+- Supports: JPG, JPEG, PNG, WEBP  
+- Max 10 files per request  
+- Max 5MB per file  
+- Stored in: `src/uploads/products`  
+
+---
+
+# 👨‍💻 Author
+
+**Sabbir Hossain Niyaz**  
+🎓 CSE Student, AIUB  
+💼 Full Stack Developer  
