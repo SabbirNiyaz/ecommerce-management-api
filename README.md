@@ -12,9 +12,78 @@ A **scalable RESTful API** built with **NestJS + TypeORM + PostgreSQL** for mana
 - 🖼️ Multiple Image Upload System (Multer)
 - 👤 User Profile Management
 - 🗄️ PostgreSQL Relational Database
+- ✉️ Automated Welcome Email System (Nodemailer via NestJS Mailer)
 - ✅ DTO Validation (class-validator & class-transformer)
 - ⚡ Clean & Modular Architecture
 - 🧠 Smart Business Logic (Auto status, validation checks)
+
+---
+
+# ✉️ Email System 
+
+## 📌 Welcome Email on Registration
+
+When a user registers successfully (`/auth/signup`):
+
+- A **welcome email is automatically sent**
+- Powered by `@nestjs-modules/mailer`
+- Uses **role-based HTML templates**
+
+---
+
+## 📧 Email Features
+
+| Feature | Description |
+|--------|------------|
+| SMTP Provider | Gmail SMTP |
+| Trigger | After successful signup |
+| Template System | Role-based (seller / admin) |
+| Format | Beautiful HTML email |
+| Personalization | User name + role injected dynamically |
+
+---
+
+## 👤 Role-Based Email Templates
+
+### 🟢 Seller Email
+- Subject: `Your Seller Account is Ready!`
+- Includes:
+  - Welcome message
+  - Seller dashboard link
+  - Selling instructions
+
+---
+
+### 🔵 Admin Email
+- Subject: `[Admin] Platform Access Granted`
+- Includes:
+  - Admin access confirmation
+  - Admin panel link
+  - Platform control message
+
+---
+
+## ⚙️ Email Configuration (SMTP)
+
+| Config | Value |
+|--------|------|
+| Host | smtp.gmail.com |
+| Port | 465 |
+| Secure | true |
+| Auth Email | EMAIL_USER (env) |
+| Auth Password | EMAIL_APP_PASS (env) |
+
+---
+
+## 🧠 Email Flow
+
+1. User registers (`/auth/signup`)
+2. Password is hashed using bcrypt
+3. User is saved in PostgreSQL
+4. Role is detected (seller/admin)
+5. Welcome email template is generated
+6. Email is sent via MailerService
+7. User data is returned (without password)
 
 ---
 
@@ -118,7 +187,7 @@ A **scalable RESTful API** built with **NestJS + TypeORM + PostgreSQL** for mana
 
 | Method | Endpoint | Description |
 |--------|---------|------------|
-| POST | `/auth/signup` | Register user |
+| POST | `/auth/signup` | Register user (sends welcome email) |
 | POST | `/auth/signin` | Login user (returns JWT) |
 
 ---
