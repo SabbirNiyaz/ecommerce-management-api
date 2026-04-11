@@ -6,6 +6,8 @@ import { UserEntity } from './UserEntity/user.entity';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { ProfileEntity } from './UserEntity/profile.entity';
+import { MailerService } from '@nestjs-modules/mailer';
+import { getWelcomeEmail, Role } from './mail/email-templates';
 
 @Injectable()
 export class AuthService {
@@ -15,59 +17,78 @@ export class AuthService {
 
         @InjectRepository(ProfileEntity)
         private readonly profileRepository: Repository<ProfileEntity>,
+
         private readonly jwtService: JwtService,
+
+        private readonly mailerService: MailerService,
     ) { }
     //------------------------- Authentication Routes -------------------------//
     //! Sign Up
     async signUp(payload: Partial<UserEntity>) {
-        const { name, email, password, role } = payload;
+        try {
+            const { name, email, password, role } = payload;
 
-        // Check if user already exists
-        const existing = await this.userRepository.findOne({ where: { email } });
-        if (existing) {
-            throw new BadRequestException('Email already in exist');
+            // Check if user already exists
+            const existing = await this.userRepository.findOne({ where: { email } });
+            if (existing) {
+                throw new BadRequestException('Email already in exist');
+            }
+
+            // Generate salt and hash
+            const salt = await bcrypt.genSalt()
+            const hashedPassword = await bcrypt.hash(password as string, salt)
+
+            const user = this.userRepository.create({
+                name,
+                email,
+                password: hashedPassword,
+                role,
+            });
+
+            const saved = await this.userRepository.save(user);
+
+            // Send Welcome Email
+            const template = getWelcomeEmail(saved.name, saved.role as Role);
+            if (!template) throw new BadRequestException(`No email template for role: ${saved.role}`);
+
+            await this.mailerService.sendMail({ to: saved.email, ...template });
+
+            // Exclude password from response
+            const { password: _, ...result } = saved;
+            return result;
+
+        } catch (error: any | string) {
+            throw new HttpException(`Error: ${error.message}`, error.status ? error.status : HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
-        // Generate salt and hash
-        const salt = await bcrypt.genSalt()
-        const hashedPassword = await bcrypt.hash(password as string, salt)
-
-        const user = this.userRepository.create({
-            name,
-            email,
-            password: hashedPassword,
-            role,
-        });
-
-        const saved = await this.userRepository.save(user);
-
-        // Exclude password from response
-        const { password: _, ...result } = saved;
-        return result;
     }
 
     //! Sign In
     async signIn(email: string, password: string) {
-        const user = await this.userRepository.findOne({ where: { email } });
+        try {
+            const user = await this.userRepository.findOne({ where: { email } });
 
-        if (!user || !user.password) {
-            throw new UnauthorizedException('Invalid email or password');
+            if (!user || !user.password) {
+                throw new UnauthorizedException('Invalid email or password');
+            }
+
+            const isMatchPass = await bcrypt.compare(password, user.password);
+            if (!isMatchPass) {
+                throw new UnauthorizedException('Invalid email or password');
+            }
+
+            const token = this.jwtService.sign({
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+            });
+
+            const { password: _, ...userWithoutPassword } = user;
+            return { token, user: userWithoutPassword };
+
+        } catch (error: any | string) {
+            throw new HttpException(`Error: ${error.message}`, error.status ? error.status : HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
-        const isMatchPass = await bcrypt.compare(password, user.password);
-        if (!isMatchPass) {
-            throw new UnauthorizedException('Invalid email or password');
-        }
-
-        const token = this.jwtService.sign({
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-        });
-
-        const { password: _, ...userWithoutPassword } = user;
-        return { token, user: userWithoutPassword };
     }
 
     //------------------------- Profile Routes -------------------------//
