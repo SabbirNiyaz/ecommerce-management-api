@@ -100,28 +100,34 @@ export class SellerService {
         return singleProduct;
     }
 
-    //! Create product
-    async createProduct(pDto: CreateProductDto): Promise<ProductEntity> {
-        try {
-            // Create entity instance
-            const newProduct = await this.productRepo.create(pDto);
+//! Create product
+async createProduct(pDto: CreateProductDto): Promise<Partial<ProductEntity>> {
+    try {
+        // Create entity instance
+        const newProduct = this.productRepo.create(pDto);
 
-            // Automatically set status based on stock 
-            const stock = newProduct.stock ?? 0;
-            if (stock < 1) {
-                newProduct.status = "out_of_stock";
-            } else {
-                newProduct.status = "available";
-            }
-
-            // Save to database
-            return await this.productRepo.save(newProduct);
-
-        } catch (error: any | string) {
-            console.error('Error creating product:', error.message);
-            throw new HttpException(`Error: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+        // Automatically set status based on stock 
+        const stock = newProduct.stock ?? 0;
+        if (stock < 1) {
+            newProduct.status = "out_of_stock";
+        } else {
+            newProduct.status = "available";
         }
+
+        // Save to database
+        const result = await this.productRepo.save(newProduct);
+
+        return {
+            id: result.id,
+            name: result.name,
+            description: result.description
+        };
+
+    } catch (error: any | string) {
+        console.error('Error creating product:', error.message);
+        throw new HttpException(`Error: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+}
 
     //! Update product
     async updateProduct(id: number, pDto: UpdateProductDto): Promise<ProductEntity> {

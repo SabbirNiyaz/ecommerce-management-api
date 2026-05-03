@@ -10,7 +10,6 @@ import { ProductEntity } from "./entities/product.entity";
 import { JwtGuard } from "src/auth/jwt.guard";
 import { existsSync } from "fs";
 import express from "express";
-import { Type } from "class-transformer";
 
 @Controller('products')
 export class SellerController {
@@ -41,7 +40,7 @@ export class SellerController {
     //! Create product
     @Post()
     @UseGuards(JwtGuard)
-    async createProduct(@Body() pDto: CreateProductDto, @Req() req: any): Promise<ProductEntity> {
+    async createProduct(@Body() pDto: CreateProductDto, @Req() req: any): Promise<Partial<ProductEntity>> {
         // Check user role
         if (req.user.role !== 'seller') {
             throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
