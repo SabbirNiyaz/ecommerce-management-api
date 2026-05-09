@@ -8,7 +8,12 @@ import { MoreThan, Repository } from "typeorm"
 import { ProductImageEntity } from "./entities/product-image.entity"
 import { join } from "path"
 import { existsSync, unlinkSync } from "fs"
-import e from "express"
+
+// DTO for pagination query parameters
+export class PaginationDto {
+    page?: number = 1
+    limit?: number = 12
+}
 
 @Injectable()
 export class SellerService {
@@ -21,11 +26,42 @@ export class SellerService {
     ) { }
     //---------------------------------- Product Get, Upload & Management ----------------------------------//
     //! Get all products 
-    async getAllProducts(): Promise<ProductEntity[]> {
-        const allProduct = await this.productRepo.find({
+    // async getAllProducts(): Promise<ProductEntity[]> {
+    //     const allProduct = await this.productRepo.find({
+    //         select: {
+    //             id: true,
+    //             name: true,
+    //             category: true,
+    //             description: true,
+    //             price: true,
+    //             stock: true,
+    //             status: true,
+    //         },
+    //         order: {
+    //             id: 'ASC'
+    //         },
+    //         relations: ['images'],
+    //     })
+    //     if (allProduct.length === 0) {
+    //         throw new HttpException('No product found', HttpStatus.NOT_FOUND);
+    //     }
+    //     return allProduct;
+    // }
+
+    //---------------------------------- Get Products with Pagination ----------------------------------//
+    async getAllProducts(page: number = 1, limit: number = 12): Promise<{
+        data: ProductEntity[]
+        total: number
+        page: number
+        lastPage: number
+    }> {
+        const skip = (page - 1) * limit
+
+        const [data, total] = await this.productRepo.findAndCount({
             select: {
                 id: true,
                 name: true,
+                category: true,
                 description: true,
                 price: true,
                 stock: true,
@@ -35,11 +71,20 @@ export class SellerService {
                 id: 'ASC'
             },
             relations: ['images'],
+            skip,
+            take: limit,
         })
-        if (allProduct.length === 0) {
-            throw new HttpException('No product found', HttpStatus.NOT_FOUND);
+
+        if (total === 0) {
+            throw new HttpException('No product found', HttpStatus.NOT_FOUND)
         }
-        return allProduct;
+
+        return {
+            data,
+            total,
+            page,
+            lastPage: Math.ceil(total / limit),
+        }
     }
 
     //! Filter product
@@ -100,34 +145,34 @@ export class SellerService {
         return singleProduct;
     }
 
-//! Create product
-async createProduct(pDto: CreateProductDto): Promise<Partial<ProductEntity>> {
-    try {
-        // Create entity instance
-        const newProduct = this.productRepo.create(pDto);
+    //! Create product
+    async createProduct(pDto: CreateProductDto): Promise<Partial<ProductEntity>> {
+        try {
+            // Create entity instance
+            const newProduct = this.productRepo.create(pDto);
 
-        // Automatically set status based on stock 
-        const stock = newProduct.stock ?? 0;
-        if (stock < 1) {
-            newProduct.status = "out_of_stock";
-        } else {
-            newProduct.status = "available";
+            // Automatically set status based on stock 
+            const stock = newProduct.stock ?? 0;
+            if (stock < 1) {
+                newProduct.status = "out_of_stock";
+            } else {
+                newProduct.status = "available";
+            }
+
+            // Save to database
+            const result = await this.productRepo.save(newProduct);
+
+            return {
+                id: result.id,
+                name: result.name,
+                description: result.description
+            };
+
+        } catch (error: any | string) {
+            console.error('Error creating product:', error.message);
+            throw new HttpException(`Error: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
-        // Save to database
-        const result = await this.productRepo.save(newProduct);
-
-        return {
-            id: result.id,
-            name: result.name,
-            description: result.description
-        };
-
-    } catch (error: any | string) {
-        console.error('Error creating product:', error.message);
-        throw new HttpException(`Error: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
     }
-}
 
     //! Update product
     async updateProduct(id: number, pDto: UpdateProductDto): Promise<ProductEntity> {

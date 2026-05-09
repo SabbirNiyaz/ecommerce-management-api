@@ -17,9 +17,18 @@ export class SellerController {
 
     //---------------------------------- Product Get, Upload & Management ----------------------------------//
     //! Get all products
+    // @Get()
+    // async getAllProducts(): Promise<ProductEntity[]> {
+    //     return this.sellerService.getAllProducts();
+    // }
+
+    //---------------------------------- Get Products with Pagination ----------------------------------//
     @Get()
-    async getAllProducts(): Promise<ProductEntity[]> {
-        return this.sellerService.getAllProducts();
+    getAllProducts(
+        @Query('page') page: string = '1',
+        @Query('limit') limit: string = '12',
+    ) {
+        return this.sellerService.getAllProducts(Number(page), Number(limit))
     }
 
     //! Filter product
