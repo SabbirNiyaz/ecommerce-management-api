@@ -26,7 +26,7 @@ export class SellerController {
     @Get()
     getAllProducts(
         @Query('page') page: string = '1',
-        @Query('limit') limit: string = '12',
+        @Query('limit') limit: string = '16',
     ) {
         return this.sellerService.getAllProducts(Number(page), Number(limit))
     }

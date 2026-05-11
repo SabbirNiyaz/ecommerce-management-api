@@ -12,7 +12,7 @@ import { existsSync, unlinkSync } from "fs"
 // DTO for pagination query parameters
 export class PaginationDto {
     page?: number = 1
-    limit?: number = 12
+    limit?: number = 16
 }
 
 @Injectable()
@@ -49,7 +49,7 @@ export class SellerService {
     // }
 
     //---------------------------------- Get Products with Pagination ----------------------------------//
-    async getAllProducts(page: number = 1, limit: number = 12): Promise<{
+    async getAllProducts(page: number = 1, limit: number = 16): Promise<{
         data: ProductEntity[]
         total: number
         page: number
