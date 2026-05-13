@@ -102,7 +102,7 @@ export class AuthService {
     async getUserProfile(userId: number): Promise<ProfileEntity> {
         try {
             const user = await this.profileRepository.findOne({
-                where: { id: userId },
+                where: { user: { id: userId } },
                 relations: ['user'],
                 select: {
                     id: true,
