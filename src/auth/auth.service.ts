@@ -86,8 +86,14 @@ export class AuthService {
             const { password: _, ...userWithoutPassword } = user;
             return { token, user: userWithoutPassword };
 
-        } catch (error: any | string) {
-            throw new HttpException(`Error: ${error.message}`, error.status ? error.status : HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (error: any) {
+            throw new HttpException(
+                {
+                    success: false,
+                    message: error.message || "Something went wrong",
+                },
+                error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+            );
         }
     }
 

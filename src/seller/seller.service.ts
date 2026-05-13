@@ -132,6 +132,7 @@ export class SellerService {
             select: {
                 id: true,
                 name: true,
+                category: true,
                 description: true,
                 price: true,
                 stock: true,
