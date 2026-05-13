@@ -45,8 +45,11 @@ export class AuthController {
 
     //! Create Profile
     @Post('profile')
-    async createProfile(@Body() body: CreateProfileDto) {
-        return this.authService.createProfile(body);
+    @UseGuards(JwtGuard)
+    async createProfile(@Req() req,
+        @Body() body: CreateProfileDto) {
+        const userId = req.user.id as number;
+        return this.authService.createProfile(userId, body);
     }
 
     //! Update Profile

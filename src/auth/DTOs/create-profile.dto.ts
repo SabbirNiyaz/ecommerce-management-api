@@ -25,9 +25,4 @@ export class CreateProfileDto {
     @IsBoolean({ message: 'isActive must be true or false' })
     @Type(() => Boolean)
     isActive?: boolean;
-
-    @IsNotEmpty({ message: 'User ID is required' })
-    @Type(() => Number)
-    @IsNumber({}, { message: 'User ID must be a number' })
-    userId?: number;
 }

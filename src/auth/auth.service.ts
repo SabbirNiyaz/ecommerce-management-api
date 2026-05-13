@@ -132,8 +132,8 @@ export class AuthService {
 
 
     //! Create Profile
-    async createProfile(payload: Partial<ProfileEntity>) {
-        const { profileImage, bio, address, phone, isActive, userId } = payload as any;
+    async createProfile(userId: number, payload: Partial<ProfileEntity>) {
+        const { profileImage, bio, address, phone, isActive } = payload as any;
 
         const user = await this.userRepository.findOne({
             where: {
