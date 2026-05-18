@@ -178,10 +178,11 @@ export class SellerService {
     //! Update product
     async updateProduct(id: number, pDto: UpdateProductDto): Promise<ProductEntity> {
         try {
-            const findProduct = await this.productRepo.findOneBy({ id })
+            const findProduct = await this.productRepo.findOneBy({ id });
             if (findProduct === null) {
                 throw new HttpException(`Product id:${id} is not found`, HttpStatus.NOT_FOUND);
             }
+
             // Check if any changes are made
             const hasNoChanges =
                 (pDto.name === undefined || pDto.name === findProduct.name) &&
@@ -194,23 +195,40 @@ export class SellerService {
             if (hasNoChanges) {
                 throw new HttpException('No changes detected', HttpStatus.BAD_REQUEST);
             }
-            // Automatically set status based on stock 
-            const currentStock = findProduct.stock ?? 0;
-            if (currentStock < 1) {
-                findProduct.status = "out_of_stock";
-            } else {
-                findProduct.status = "available";
-            }
 
-            // Merge DTO into found product
+            // Merge DTO into found product FIRST
             Object.assign(findProduct, pDto);
+
+            // Automatically sync status <-> stock AFTER merge
+            // Priority: explicit status in DTO takes precedence, then stock drives status
+            if (pDto.status === 'out_of_stock') {
+                // User explicitly set out_of_stock → force stock to 0
+                findProduct.stock = 0;
+            } else if (pDto.stock !== undefined) {
+                // User updated stock → derive status from new stock value
+                const newStock = Number(findProduct.stock) ?? 0;
+                findProduct.status = newStock < 1 ? 'out_of_stock' : 'available';
+            } else {
+                // Neither changed explicitly — still sync in case of data inconsistency
+                const resolvedStock = Number(findProduct.stock) ?? 0;
+                if (resolvedStock < 1) {
+                    findProduct.status = 'out_of_stock';
+                    findProduct.stock = 0;
+                } else if (findProduct.status === 'out_of_stock') {
+                    // Stock is positive but status says out_of_stock → correct it
+                    findProduct.status = 'available';
+                }
+            }
 
             // Save the updated entity
             const updateProduct = await this.productRepo.save(findProduct);
             return updateProduct;
 
         } catch (error: any | string) {
-            throw new HttpException(`Error: ${error.message}`, error.status ? error.status : HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new HttpException(
+                `Error: ${error.message}`,
+                error.status ? error.status : HttpStatus.INTERNAL_SERVER_ERROR,
+            );
         }
     }
 

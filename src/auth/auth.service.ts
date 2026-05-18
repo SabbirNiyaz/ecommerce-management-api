@@ -177,7 +177,7 @@ export class AuthService {
         const { profileImage, bio, address, phone, isActive } = payload as any;
         // Find profile
         const profile = await this.profileRepository.findOne({
-            where: { id: userId },
+            where: { user: { id: userId } },
             relations: ['user'],
         });
 
